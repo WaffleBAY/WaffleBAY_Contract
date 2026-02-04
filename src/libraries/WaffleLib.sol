@@ -13,7 +13,7 @@ library WaffleLib {
         COMMITTED,      // 비밀값 제출됨
         REVEALED,       // 당첨자 확정 (정산 대기)
         COMPLETED,      // 정산 완료
-        FAILED          // 목표 미달 또는 타임아웃 (기존 CANCELED)
+        FAILED          // 목표 미달 또는 타임아웃
     }
 
     struct Market {
@@ -37,11 +37,12 @@ library WaffleLib {
         address[] participants;
         address[] winners;
         
-        // Randomness (Phase 4)
-        bytes32 commitment;       // hash(secret + salt)
-        uint256 revealStartBlock; // Commit 시점 블록
+        // 난수 생성 (수정됨)
+        uint256 snapshotBlock;    // closeEntries에서 설정 (block.number + 100)
+        bytes32 commitment;       // hash(secret + nonce)
+        uint256 nonce;            // 추가 엔트로피
         uint256 revealDeadline;   // Reveal 제한 시간 (타임아웃용)
-        uint256 nullifierHashSum; // [Flowchart Phase 4] 엔트로피 누적값 (XOR)
+        uint256 nullifierHashSum; // XOR 누적값
     }
 
     struct ParticipantInfo {
@@ -62,4 +63,3 @@ library WaffleLib {
     error TransferFailed();
     error GoalNotReached();
 }
-

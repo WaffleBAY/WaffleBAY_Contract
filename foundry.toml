@@ -14,9 +14,8 @@ remappings = [
     "forge-std/=lib/forge-std/src/"
 ]
 
-
 [rpc_endpoints]
-worldchain_sepolia = "${WORLD_CHAIN_RPC_URL}"
+worldchain_sepolia = "${https://worldchain-sepolia.explorer.alchemy.com/}"
 
 [etherscan]
 worldchain_sepolia = { key = "ANY_STRING", url = "https://worldchain-sepolia.explorer.alchemy.com/api" }

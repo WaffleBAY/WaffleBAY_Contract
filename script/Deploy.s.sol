@@ -1,34 +1,31 @@
+// script/DeployFactory.s.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { Script, console } from "forge-std/Script.sol";
-import { WaffleMarket } from "../src/WaffleMarket.sol";
+import "forge-std/Script.sol";
+import "../src/WaffleFactory.sol";
 
-contract DeployWaffle is Script {
+contract DeployFactoryScript is Script {
     function run() external {
-        // .env 파일에서 정보 가져오기
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address worldIdAddress = vm.envAddress("WORLD_ID_ADDRESS");
+        address worldFoundation = vm.envAddress("WORLD_FOUNDATION_ADDRESS");
+        address opsWallet = vm.envAddress("OPS_WALLET_ADDRESS");
+        address operator = vm.envAddress("OPERATOR_ADDRESS");
         string memory appId = vm.envString("APP_ID");
-        
-        // World Chain Sepolia 설정값
-        address worldIdRouter = 0x11cA3127182f7583EfC416a8771BD4d11Fae433D; 
-        address foundationWallet = vm.addr(deployerPrivateKey); // 테스트용으로 배포자를 수수료 수취인으로
-        address opsWallet = vm.addr(deployerPrivateKey);        // 테스트용
 
-        // 배포 시작 (여기서부터 가스비가 나갑니다)
         vm.startBroadcast(deployerPrivateKey);
 
-        WaffleMarket market = new WaffleMarket(
-            worldIdRouter,
+        WaffleFactory factory = new WaffleFactory(
+            worldIdAddress,
             appId,
-            foundationWallet,
-            opsWallet
+            worldFoundation,
+            opsWallet,
+            operator
         );
 
-        vm.stopBroadcast();
+        console.log("WaffleFactory deployed to:", address(factory));
 
-        console.log("==========================================");
-        console.log("Deployed WaffleMarket at:", address(market));
-        console.log("==========================================");
+        vm.stopBroadcast();
     }
 }
