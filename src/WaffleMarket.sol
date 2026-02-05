@@ -83,6 +83,12 @@ contract WaffleMarket is ReentrancyGuard {
         goalAmount = _goalAmount;
         preparedQuantity = _preparedQuantity;
         sellerDeposit = msg.value;
+        if (_mType == WaffleLib.MarketType.RAFFLE) {
+            uint256 requiredDeposit = (_goalAmount * 15) / 100;
+            if (msg.value < requiredDeposit) {
+                revert WaffleLib.InsufficientFunds(); 
+            }
+        }
         endTime = block.timestamp + _duration;
         status = WaffleLib.MarketStatus.CREATED;
     }
