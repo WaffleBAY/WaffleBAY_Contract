@@ -11,8 +11,8 @@ contract WaffleFactory is Ownable {
     address public immutable worldId;
     string public appId;
     address public worldFoundation;  // 수수료 수령 주소 (3%)
-    address public opsWallet;        // 운영 수수료 (2%)
-    address public operator;         // commitSecret, revealSecret 호출 권한
+    address public immutable treasury; // ✅ 수수료 수령 주소 (2%) - 금고
+    address public operator;
     
     // 생성된 마켓 목록
     address[] public markets;
@@ -27,21 +27,20 @@ contract WaffleFactory is Ownable {
         address indexed seller,
         WaffleLib.MarketType mType
     );
-    
     event OperatorUpdated(address indexed oldOperator, address indexed newOperator);
     event FeeRecipientsUpdated(address worldFoundation, address opsWallet);
-    
+
     constructor(
         address _worldId,
         string memory _appId,
         address _worldFoundation,
-        address _opsWallet,
+        address _treasury, // ✅ 생성자에서 금고 주소를 받습니다.
         address _operator
     ) Ownable(msg.sender) {
         worldId = _worldId;
         appId = _appId;
         worldFoundation = _worldFoundation;
-        opsWallet = _opsWallet;
+        treasury = _treasury; // 저장
         operator = _operator;
     }
     
@@ -62,19 +61,20 @@ contract WaffleFactory is Ownable {
             require(msg.value == 0, "Lottery does not require deposit");
         }
         
-        // 🆕 새 Market 컨트랙트 배포
+        // ✅ [수정완료] 기존 WaffleMarket의 생성자 파라미터(11개)를 모두 채워줍니다.
+        // opsWallet 자리에 treasury(금고) 주소를 전달하는 것이 핵심입니다.
         WaffleMarket newMarket = new WaffleMarket{value: msg.value}(
-            msg.sender,           // seller
-            worldId,
-            appId,
-            worldFoundation,
-            opsWallet,
-            operator,             // operator 전달
-            _mType,
-            _ticketPrice,
-            _goalAmount,
-            _preparedQuantity,
-            _duration
+            msg.sender,           // _seller (마켓 생성 요청자)
+            worldId,              // _worldId
+            appId,                // _appId
+            worldFoundation,      // _worldFoundation
+            treasury,             // ✅ _opsWallet (여기에 금고 주소가 들어갑니다!)
+            operator,             // _operator
+            _mType,               // _mType
+            _ticketPrice,         // _ticketPrice
+            _goalAmount,          // _goalAmount
+            _preparedQuantity,    // _preparedQuantity
+            _duration             // _duration
         );
         
         // 마켓 등록
@@ -91,7 +91,7 @@ contract WaffleFactory is Ownable {
             msg.sender,
             _mType
         );
-        
+
         return marketAddress;
     }
     
@@ -117,11 +117,10 @@ contract WaffleFactory is Ownable {
     }
     
     function updateFeeRecipients(
-        address _worldFoundation,
-        address _opsWallet
+        address _worldFoundation
     ) external onlyOwner {
+        // treasury는 immutable이라 변경 불가, 재단 주소만 변경 가능
         worldFoundation = _worldFoundation;
-        opsWallet = _opsWallet;
-        emit FeeRecipientsUpdated(_worldFoundation, _opsWallet);
+        emit FeeRecipientsUpdated(_worldFoundation, treasury);
     }
 }

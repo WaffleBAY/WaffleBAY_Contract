@@ -23,7 +23,7 @@ contract WaffleMarket is ReentrancyGuard {
     
     // 경제 모델
     uint256 public ticketPrice;
-    uint256 public constant PARTICIPANT_DEPOSIT = 0.005 ether;
+    uint256 public constant PARTICIPANT_DEPOSIT = 0.0001 ether; // 배포할때 부담 줄이려고 낮춤, 원래는 0.005 ether
     uint256 public sellerDeposit;
     uint256 public prizePool;
     

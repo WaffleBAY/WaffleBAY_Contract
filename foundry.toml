@@ -15,7 +15,7 @@ remappings = [
 ]
 
 [rpc_endpoints]
-worldchain_sepolia = "${https://worldchain-sepolia.explorer.alchemy.com/}"
+worldchain_sepolia = "https://worldchain-sepolia.g.alchemy.com/public"
 
 [etherscan]
 worldchain_sepolia = { key = "ANY_STRING", url = "https://worldchain-sepolia.explorer.alchemy.com/api" }
