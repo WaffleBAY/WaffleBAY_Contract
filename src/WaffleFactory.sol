@@ -4,6 +4,8 @@ pragma solidity ^0.8.20;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { WaffleMarket } from "./WaffleMarket.sol";
 import { WaffleLib } from "./libraries/WaffleLib.sol";
+import { IWorldID } from "./interfaces/IWorldID.sol";
+import { ByteHasher } from "./libraries/ByteHasher.sol";
 
 contract WaffleFactory is Ownable {
     
@@ -45,36 +47,44 @@ contract WaffleFactory is Ownable {
     }
     
     // 마켓 생성 함수
+    // 판매자는 World ID 인증 후 sellerNullifierHash를 전달
     function createMarket(
+        uint256 _root,
+        uint256 _sellerNullifierHash,
+        uint256[8] calldata _sellerProof,
         WaffleLib.MarketType _mType,
         uint256 _ticketPrice,
         uint256 _goalAmount,
         uint256 _preparedQuantity,
         uint256 _duration
     ) external payable returns (address) {
-        
-        // Raffle일 경우 보증금 검증
-        if (_mType == WaffleLib.MarketType.RAFFLE) {
-            uint256 requiredDeposit = (_goalAmount * 15) / 100;
-            require(msg.value >= requiredDeposit, "Insufficient seller deposit");
-        } else {
-            require(msg.value == 0, "Lottery does not require deposit");
-        }
-        
-        // ✅ [수정완료] 기존 WaffleMarket의 생성자 파라미터(11개)를 모두 채워줍니다.
-        // opsWallet 자리에 treasury(금고) 주소를 전달하는 것이 핵심입니다.
+
+        // 판매자 World ID 검증 (배포 시 주석 해제)
+        // IWorldID(worldId).verifyProof(
+        //     _root, 1,
+        //     ByteHasher.hashToField(abi.encodePacked(msg.sender)),
+        //     _sellerNullifierHash,
+        //     ByteHasher.hashToField(abi.encodePacked(appId)),
+        //     _sellerProof
+        // );
+
+        // 두 타입 모두 판매자 보증금 필요 (goalAmount × 15%)
+        uint256 requiredDeposit = (_goalAmount * 15) / 100;
+        require(msg.value >= requiredDeposit, "Insufficient seller deposit");
+
         WaffleMarket newMarket = new WaffleMarket{value: msg.value}(
-            msg.sender,           // _seller (마켓 생성 요청자)
-            worldId,              // _worldId
-            appId,                // _appId
-            worldFoundation,      // _worldFoundation
-            treasury,             // ✅ _opsWallet (여기에 금고 주소가 들어갑니다!)
-            operator,             // _operator
-            _mType,               // _mType
-            _ticketPrice,         // _ticketPrice
-            _goalAmount,          // _goalAmount
-            _preparedQuantity,    // _preparedQuantity
-            _duration             // _duration
+            msg.sender,              // _seller
+            worldId,                 // _worldId
+            appId,                   // _appId
+            worldFoundation,         // _worldFoundation
+            treasury,                // _opsWallet (금고 주소)
+            operator,                // _operator
+            _mType,                  // _mType
+            _ticketPrice,            // _ticketPrice
+            _goalAmount,             // _goalAmount
+            _preparedQuantity,       // _preparedQuantity
+            _duration,               // _duration
+            _sellerNullifierHash     // 🔐 sellerNullifierHash → Market 내부에서 commitment 자동 생성
         );
         
         // 마켓 등록

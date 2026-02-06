@@ -6,17 +6,16 @@ library WaffleLib {
     // 복권과 래플을 구분
     enum MarketType { LOTTERY, RAFFLE }
 
-    // 마켓 상태
+    // 마켓 상태 (COMMITTED 제거 — commitment은 마켓 생성 시 고정)
     enum MarketStatus {
         CREATED,        // 마켓이 생성되었지만 아직 응모를 받지 않는 상태
         OPEN,           // 응모 진행 중
-        CLOSED,         // 마감됨, 추첨을 위해 commit/reveal 대기 중
-        COMMITTED,      // 운영자가 비밀값의 해시(commitment)를 제출한 상태
+        CLOSED,         // 마감됨, reveal + 추첨 대기 중
         REVEALED,       // 비밀값이 공개되고 당첨자가 확정된 상태 (정산 대기)
         COMPLETED,      // 정산 완료(상금 지급, 보증금 반환)
         FAILED          // 목표 미달 또는 reveal 타임아웃으로 마켓이 실패한 상태
     }
-
+    
     struct Market {
         uint256 id;         // 마켓 고유 ID, Factory에서 부여
         address seller;     // 마켓 판매자 주소
@@ -25,7 +24,7 @@ library WaffleLib {
         // 경제 모델
         uint256 ticketPrice;      // 응모 1회당 가격, 티켓 가격 (0.01 ETH)
         uint256 depositPerEntry;  // 참여자 보증금 (0.005 ETH)
-        uint256 sellerDeposit;    // 판매자 보증금 (Raffle에서만 사용)
+        uint256 sellerDeposit;    // 판매자 보증금 (LOTTERY/RAFFLE 모두 goalAmount × 15%)
         uint256 prizePool;        // 95% 누적된 상금
         
         // 조건
@@ -38,13 +37,11 @@ library WaffleLib {
         address[] participants;     // 응모한 참여자들의 주소 배열
         address[] winners;          // 추첨된 당첨자들의 주소 배열
         
-        // 난수 생성
-        uint256 snapshotBlock;    // closeEntries에서 설정 (block.number + 100)
-                                  // 이 블록 이후의 prevrandao를 난수 소스로 사용
-        bytes32 commitment;       // hash(secret + nonce)
-        uint256 nonce;            // commitment에 포함된 추가 엔트로피 값
-        uint256 revealDeadline;   // Reveal 제한 시간 (타임아웃용)
-        uint256 nullifierHashSum; // 모든 참여자들의 nullifierHash를 XOR로 누적한 값
+        // 난수 생성 (Commit-Reveal)
+        uint256 sellerNullifierHash; // 판매자 World ID nullifierHash
+        uint256 snapshotBlock;       // closeEntries에서 설정 (block.number + 100)
+        bytes32 commitment;          // hash(sellerNullifierHash + CA), 마켓 생성 시 자동 계산
+        uint256 nullifierHashSum;    // 참여자들의 nullifierHash XOR 누적값
     }
 
     struct ParticipantInfo {

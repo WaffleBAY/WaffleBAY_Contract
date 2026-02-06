@@ -15,7 +15,7 @@ contract DeploySystem is Script {
         
         // 지갑 주소 설정
         address deployer = vm.addr(deployerPrivateKey);
-        address foundationWallet = 0x57F928155A6E469B5664426a99a2D0D8f1fdF611; 
+        address foundationWallet = address(0x57F928155A6E469B5664426a99a2D0D8f1fdF611);
         address operator = deployer; 
 
         
