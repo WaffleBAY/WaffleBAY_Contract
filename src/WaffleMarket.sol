@@ -9,37 +9,39 @@ import { ByteHasher } from "./libraries/ByteHasher.sol";
 contract WaffleMarket is ReentrancyGuard {
 
     // 이 마켓의 정보 (Factory가 아닌 개별 마켓 데이터)
-    address public immutable seller;
-    address public immutable factory;
-    address public immutable worldId;
-    uint256 public immutable externalNullifier;
+    address public immutable seller;    // 이 마켓을 만든 판매자 주소
+    address public immutable factory;   // 이 마켓을 배포한 WaffleFactory 컨트랙트 주소
+    address public immutable worldId;   // Worldcoin World ID 라우터 컨트랙트 주소
+    uint256 public immutable externalNullifier;  // World ID 검증 시 사용하는 외부 nullifier, appId를 해싱하여 생성
     
-    address public worldFoundation;
-    address public opsWallet;
-    address public operator;  // commitSecret, revealSecret 호출 권한
+    address public worldFoundation;     // Worldcoin 재단 지갑 주소. 티켓 가격의 3%를 수수료로 받음.
+    address public opsWallet;           // 운영자 지갑 주소 (WaffleTreasury 컨트랙트, 2% 수수료를 받는 곳)
+    address public operator;            // commitSecret, revealSecret 호출할 수 있는 운영자 주소
     
     // 마켓 타입
-    WaffleLib.MarketType public mType;
+    WaffleLib.MarketType public mType;  // LOTTERY(0), RAFFLE(1)
     
     // 경제 모델
-    uint256 public ticketPrice;
-    uint256 public constant PARTICIPANT_DEPOSIT = 0.0001 ether; // 배포할때 부담 줄이려고 낮춤, 원래는 0.005 ether
-    uint256 public sellerDeposit;
-    uint256 public prizePool;
+    uint256 public ticketPrice;         // 응모 1회당 가격, 티켓 가격 (0.01 ETH)
+    uint256 public constant PARTICIPANT_DEPOSIT = 0.005 ether; // 참여자 보증금
+    uint256 public sellerDeposit;       // 판매자 보증금, RAFFLE에서만 사용. goalAmount의 15%를 마켓 생성 시 예치
+    uint256 public prizePool;           // 95% 누적된 상금
     
     // 조건
-    uint256 public goalAmount;
-    uint256 public preparedQuantity;
-    uint256 public endTime;
+    uint256 public goalAmount;          // LOTTERY: 이 금액 이상 prizePool이 모여야 추첨 진행.
+                                        //          미달 시 FAILED → 전액 환불.
+                                        // RAFFLE: 판매자 보증금 계산 기준 (goalAmount * 15%).
+    uint256 public preparedQuantity;    // RAFFLE 전용. 판매자가 준비한 경품 수량.
+    uint256 public endTime;             // 응모 마감 시간 (타임스탬프)
     
     // 상태
-    WaffleLib.MarketStatus public status;
-    address[] public participants;
-    address[] public winners;
+    WaffleLib.MarketStatus public status;   // 
+    address[] public participants;          // 응모한 참여자들의 주소 배열, enter() 시 push
+    address[] public winners;               // 당첨자들의 주소 배열
     
     // 난수 생성
-    uint256 public snapshotBlock;
-    bytes32 public commitment;
+    uint256 public snapshotBlock;           // closeEntries()에서 block.number + 100으로 설정
+    bytes32 public commitment;              // hash(secret + nonce)
     uint256 public nonce;
     uint256 public constant REVEAL_TIMEOUT = 1 days;
     uint256 public revealDeadline;
